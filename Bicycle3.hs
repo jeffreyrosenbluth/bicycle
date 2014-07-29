@@ -91,11 +91,4 @@ bikeTrip =  do
 main :: IO ()
 main = do
   let (s, w) = execRWS (run bikeTrip) bike startTrip 
-  putStrLn ""
-  putStrLn "------- Bike Trip ---------------------------------"
-  putStrLn ""
-  mapM_ putStrLn w
-  putStrLn ""
-  putStrLn ("Distance : " ++ printf "%.2f" (s^.distance) ++ " miles")
-  putStrLn ("Time     : " ++ printf "%.2f" (s^.time) ++ " minutes")
-  putStrLn ("Avg Speed: " ++ printf "%.2f" (60 * s^.distance / s^.time) ++ " mph") 
+  display s w

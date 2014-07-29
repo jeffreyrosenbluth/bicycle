@@ -1,10 +1,9 @@
-{-# LANGUAGE TemplateHaskell             #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 module Main where
 
 import Core
-import Control.Lens
+import Control.Lens      ((.=), (+=), (^.), use)
 import Control.Monad.RWS
 import Text.Printf
 
@@ -45,9 +44,7 @@ bikeTrip mph =  do
   shift Small Down
   cadence 100
   (s, _) <- go 20
-  if (s * 3600) > mph
-    then shift Small Up
-    else shift Small Down
+  shift Small (if (s * 3600) > mph then Up else Down)
   go 10
   go 3
   shift Big Down
@@ -58,12 +55,4 @@ bikeTrip mph =  do
 main :: IO ()
 main = do
   let (s, w) = execRWS (bikeTrip 20) bike startTrip 
-  putStrLn ""
-  putStrLn "------- Bike Trip ---------------------------------"
-  putStrLn ""
-  mapM_ putStrLn w
-  putStrLn ""
-  putStrLn ("Distance : " ++ printf "%.2f" (s^.distance) ++ " miles")
-  putStrLn ("Time     : " ++ printf "%.2f" (s^.time) ++ " minutes")
-  putStrLn ("Avg Speed: " ++ printf "%.2f" (60 * s^.distance / s^.time) ++ " mph") 
-  putStrLn ""
+  display s w

@@ -2,9 +2,10 @@
 
 module Core where
 
-import Control.Lens
+import Control.Lens      (makeLenses, use, (.=), (^.))
 import Control.Monad.RWS
 import Data.List         (elemIndex)
+import Text.Printf       (printf)
 
 type Gears = [Int]
 
@@ -26,11 +27,11 @@ data Trip = Trip
 
 makeLenses ''Trip
 
-bgRing, smRing :: [Int]
+bgRing, smRing :: Gears
 bgRing = [36, 52]
 smRing = [11, 12, 13, 14, 15, 16, 17, 19, 21, 23, 25]
 
--- In inches.
+-- Inches.
 diameter :: Double
 diameter = 26.3
 
@@ -43,7 +44,9 @@ bike = Bicycle bgRing smRing diameter
 startTrip :: Trip
 startTrip = Trip 90 36 21 0 0
 
-type Ride a = RWS Bicycle [String] Trip a
+type Log = [String]
+
+type Ride a = RWS Bicycle Log Trip a
 
 nextGear :: Gears -> Int -> Int
 nextGear gs g = case elemIndex g gs of
@@ -60,18 +63,18 @@ prevGear gs g = case elemIndex g gs of
              else gs !! (i-1)
 
 -- Diameter is in inches, Distance in miles.
+-- Result is miles per second
 speed :: Int -> Int -> Double -> Double -> Double
 speed bg sm diam r = 
-  fromIntegral bg / fromIntegral sm * diam * r  * pi / (60 * 12 * 5280)
+  fromIntegral bg / fromIntegral sm * diam * r * pi / (60 * 12 * 5280)
 
-data Ring = Big | Small deriving Show
-
-data Direction = Up | Down deriving Show
+data Ring      = Big | Small deriving Show
+data Direction = Up  | Down deriving Show
 
 bgRingUp :: Ride Int
 bgRingUp = do
-  bg <- use bgGear
-  b  <- ask
+  bg  <- use bgGear
+  b   <- ask
   let cr = b^.chainRings
       r  = nextGear cr bg
   tell $ if bg == r
@@ -83,7 +86,7 @@ bgRingUp = do
 bgRingDn :: Ride Int
 bgRingDn = do
   bg <- use bgGear
-  b <- ask
+  b  <- ask
   let cr = b^.chainRings
       r  = prevGear cr bg
   tell $ if bg == r
@@ -100,7 +103,7 @@ smRingUp = do
       r  = nextGear cr sm
   tell $ if sm == r
     then ["Shift: *** Already at lowest gear."]
-    else ["Shift: Small ring up to " ++ show r]
+    else ["Shift: Small ring up to " ++ show r ++ "."]
   smGear .= r
   return r
 
@@ -112,6 +115,17 @@ smRingDn = do
       r  = prevGear cr sm
   tell $ if sm == r
     then ["Shift: *** Already at highest gear."]
-    else ["Shift: Small ring down to " ++ show r]
+    else ["Shift: Small ring down to " ++ show r ++ "."]
   smGear .= r
   return r
+
+display :: Trip -> Log -> IO ()
+display s w = do
+  putStrLn ""
+  putStrLn "---------------- Bike Trip --------------------\n"
+  mapM_ putStrLn w
+  putStrLn ""
+  putStrLn ("Distance : " ++ printf "%.2f" (s^.distance) ++ " miles")
+  putStrLn ("Time     : " ++ printf "%.2f" (s^.time) ++ " minutes")
+  putStrLn ("Avg Speed: " ++ printf "%.2f" (60 * s^.distance / s^.time) ++ " mph") 
+  putStrLn "-----------------------------------------------\n"
