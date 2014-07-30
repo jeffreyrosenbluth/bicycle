@@ -1,58 +1,61 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
-module Main where
+module Bicycle1
+
+  ( Ring (..)
+  , Direction (..)
+  , Gears
+  , Trip (..)
+  , Bicycle (..)
+  , Ride
+  , getTime
+  , gears
+  , go
+  , shift
+  , getRPM
+  , setRPM
+  , eval
+  ) where
 
 import Core
-import Control.Lens      ((.=), (+=), (^.), use)
 import Control.Monad.RWS
 import Text.Printf
 
+getTime :: Ride Double
+getTime = gets time
+
+gears :: Ride (Int, Int)
+gears = do
+  bg <- gets bgGear
+  sm <- gets smGear
+  return (bg, sm)
+
 go :: Double -> Ride (Double, Double)
 go dist = do
-  bg <- use bgGear
-  sm <- use smGear
-  r  <- use rpm
+  bg <- gets bgGear
+  sm <- gets smGear
+  r  <- gets rpm
   b  <- ask
-  let sp = speed bg sm (b^.wheelDiam) r
+  let sp = speed bg sm (wheelDiam b) r
       tm = dist / sp / 60
   tell ["Going: " ++ printf "%.2f" dist ++ " miles at " 
                   ++ printf "%.2f" (sp * 3600) ++ " mph in " 
                   ++ printf "%.2f" tm ++ " minutes."]
-  time += tm
-  distance += dist
+  modify (\s -> s {time = time s + tm})
+  modify (\s -> s {distance = distance s + dist})
   return (sp, tm)
 
-shift :: Ring -> Direction -> Ride Int
+shift :: Ring -> Direction -> Ride ()
 shift r d = case (r, d) of
   (Big, Up)     -> bgRingUp
   (Big, Down)   -> bgRingDn
   (Small, Up)   -> smRingUp
   (Small, Down) -> smRingDn
 
-cadence :: Double -> Ride Double
-cadence x = do
-  tell ["Pedal: Change cadence to " ++ printf "%.2f" x]
-  rpm .= x
-  return x
-  
-bikeTrip :: Double -> Ride ()
-bikeTrip mph =  do
-  go 1.5
-  shift Big Up
-  shift Big Up
-  shift Small Down
-  shift Small Down
-  cadence 100
-  (s, _) <- go 20
-  shift Small (if (s * 3600) > mph then Up else Down)
-  go 10
-  go 3
-  shift Big Down
-  shift Small Up
-  go 5
-  return ()
+getRPM :: Ride Double
+getRPM = gets rpm
 
-main :: IO ()
-main = do
-  let (s, w) = execRWS (bikeTrip 20) bike startTrip 
-  display s w
+setRPM :: Double -> Ride ()
+setRPM x = do
+  tell ["Pedal: Change setRPM to " ++ printf "%.2f" x]
+  modify (\s -> s {rpm = x})

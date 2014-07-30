@@ -1,12 +1,9 @@
-{-# LANGUAGE GADTs                       #-}
-{-# LANGUAGE KindSignatures              #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 module Main where
 
 import Core
 import Control.Applicative
-import Control.Lens      hiding (Action)
 import Control.Monad.RWS
 import Text.Printf
 
@@ -19,13 +16,17 @@ shift r d = Shift r d Return
 cadence :: Double -> Action Double
 cadence x = Cadence x Return
   
--- No longer a proper GADT, equivalent to
--- data Action a = BgRingUp (Int -> Action a) | ...
-data Action :: * -> * where
-  Go       :: Double -> ((Double, Double) -> Action a) -> Action a
-  Shift    :: Ring -> Direction -> (Int -> Action a) -> Action a
-  Cadence  :: Double -> (Double -> Action a) -> Action a
-  Return   :: a -> Action a
+-- data Action :: * -> * where
+  -- Go       :: Double -> ((Double, Double) -> Action a) -> Action a
+  -- Shift    :: Ring -> Direction -> (Int -> Action a) -> Action a
+  -- Cadence  :: Double -> (Double -> Action a) -> Action a
+  -- Return   :: a -> Action a
+
+data Action a
+  = Go Double ((Double, Double) -> Action a)
+  | Shift Ring Direction (Int -> Action a)
+  | Cadence Double (Double -> Action a)
+  | Return a
 
 instance Monad Action where
   return = Return
@@ -47,17 +48,17 @@ run (Go dist f) =
   case f (0,0) of
     Go dist' g -> run (Go (dist + dist') g)
     _          -> do
-      bg <- use bgGear
-      sm <- use smGear
-      r  <- use rpm
+      bg <- gets bgGear
+      sm <- gets smGear
+      r  <- gets rpm
       b  <- ask
-      let sp = speed bg sm (b^.wheelDiam) r
+      let sp = speed bg sm (wheelDiam b) r
           tm = dist / sp / 60
       tell ["Going: " ++ printf "%.2f" dist ++ " miles at " 
                       ++ printf "%.2f" (sp * 3600) ++ " mph in " 
                       ++ printf "%.2f" tm ++ " minutes."]
-      time += tm
-      distance += dist
+      modify (\s -> s {time = time s + tm})
+      modify (\s -> s {distance = distance s + dist})
       run (f (sp, tm))
 run (Shift r d f) = do
   n <- case (r, d) of
@@ -68,19 +69,20 @@ run (Shift r d f) = do
   run (f n)
 run (Cadence x f) = do
   tell ["Pedal: Change cadence to " ++ printf "%.2f" x]
-  rpm .= x
+  modify (\s -> s {rpm = x})
   run (f x)
 run (Return x) = return x
 
-bikeTrip :: Action () 
-bikeTrip =  do
+bikeTrip :: Double ->  Action () 
+bikeTrip mph =  do
   go 1.5
   shift Big Up
   shift Big Up
   shift Small Down
   shift Small Down
   cadence 100
-  go 20
+  (s, _) <- go 20
+  shift Small (if (s * 3600) > mph then Up else Down)
   go 10
   go 3
   shift Big Down
@@ -90,5 +92,5 @@ bikeTrip =  do
  
 main :: IO ()
 main = do
-  let (s, w) = execRWS (run bikeTrip) bike startTrip 
+  let (s, w) = execRWS (run $ bikeTrip 20) bike startTrip 
   display s w
