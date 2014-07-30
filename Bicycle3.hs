@@ -1,20 +1,45 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
-module Main where
+module Bicycle3
+
+  ( Ring (..)
+  , Direction (..)
+  , Gears
+  , Trip (..)
+  , Bicycle (..)
+  , Ride
+  , getTime
+  , gears
+  , go
+  , shift
+  , getRPM
+  , setRPM
+  , eval
+  , run
+  ) where
 
 import Core
 import Control.Applicative
 import Control.Monad.RWS
 import Text.Printf
 
+getTime :: Action Double
+getTime = GetTime Return
+
+gears :: Action (Int, Int)
+gears = Gears Return
+
 go :: Double -> Action (Double, Double)
 go dist = Go dist Return
 
-shift :: Ring -> Direction -> Action Int
+shift :: Ring -> Direction -> Action ()
 shift r d = Shift r d Return
 
-cadence :: Double -> Action Double
-cadence x = Cadence x Return
+setRPM :: Double -> Action Double
+setRPM x = SetRPM x Return
+
+getRPM :: Action Double
+getRPM = GetRPM Return
   
 -- data Action :: * -> * where
   -- Go       :: Double -> ((Double, Double) -> Action a) -> Action a
@@ -23,18 +48,24 @@ cadence x = Cadence x Return
   -- Return   :: a -> Action a
 
 data Action a
-  = Go Double ((Double, Double) -> Action a)
-  | Shift Ring Direction (Int -> Action a)
-  | Cadence Double (Double -> Action a)
+  = GetTime (Double -> Action a)
+  | Gears ((Int, Int) -> Action a)
+  | Go Double ((Double, Double) -> Action a)
+  | Shift Ring Direction (() -> Action a)
+  | SetRPM Double (Double -> Action a)
+  | GetRPM (Double -> Action a)
   | Return a
 
 instance Monad Action where
   return = Return
   -- Bind --
+  GetTime f   >>= k = GetTime ((>>= k) . f)
+  Gears f     >>= k = Gears ((>>= k) . f)
   Go x f      >>= k = Go x ((>>= k) . f)
   Shift r d f >>= k = Shift r d ((>>= k) . f)
-  Cadence x f >>= k = Cadence x ((>>= k) . f)
-  Return   x  >>= k = k x
+  SetRPM x f  >>= k = SetRPM x ((>>= k) . f)
+  GetRPM f    >>= k = GetRPM ((>>= k) . f)
+  Return x    >>= k = k x
 
 instance Applicative Action where
   pure = return
@@ -44,6 +75,13 @@ instance Functor Action where
   fmap = liftM
 
 run :: Action a -> Ride a
+run (GetTime f) = do
+  tm <- gets time
+  run (f tm)
+run (Gears f) = do
+  bg <- gets bgGear
+  sm <- gets smGear
+  run (f (bg, sm))
 run (Go dist f) = 
   case f (0,0) of
     Go dist' g -> run (Go (dist + dist') g)
@@ -67,30 +105,11 @@ run (Shift r d f) = do
         (Small, Up)   -> smRingUp
         (Small, Down) -> smRingDn
   run (f n)
-run (Cadence x f) = do
+run (GetRPM f) = do
+  c <- gets rpm
+  run (f c)
+run (SetRPM x f) = do
   tell ["Pedal: Change cadence to " ++ printf "%.2f" x]
   modify (\s -> s {rpm = x})
   run (f x)
 run (Return x) = return x
-
-bikeTrip :: Double ->  Action () 
-bikeTrip mph =  do
-  go 1.5
-  shift Big Up
-  shift Big Up
-  shift Small Down
-  shift Small Down
-  cadence 100
-  (s, _) <- go 20
-  shift Small (if (s * 3600) > mph then Up else Down)
-  go 10
-  go 3
-  shift Big Down
-  shift Small Up
-  go 5 
-  return ()
- 
-main :: IO ()
-main = do
-  let (s, w) = execRWS (run $ bikeTrip 20) bike startTrip 
-  display s w

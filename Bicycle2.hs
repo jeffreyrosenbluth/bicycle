@@ -41,7 +41,7 @@ getRPM :: Action Double
 getRPM = GetRPM
 
 setRPM :: Double -> Action Double
-setRPM = setRPM
+setRPM = SetRPM
 
 data Action :: * -> * where
   GetTime  :: Action Double
