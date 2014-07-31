@@ -1,6 +1,5 @@
 {-# LANGUAGE GADTs                       #-}
 {-# LANGUAGE KindSignatures              #-}
-{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 module Bicycle2
 

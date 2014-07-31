@@ -1,20 +1,44 @@
-{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
+module Bicycle4
 
-module Main where
+  ( Ring (..)
+  , Direction (..)
+  , Gears
+  , Trip (..)
+  , Bicycle (..)
+  , Ride
+  , getTime
+  , gears
+  , go
+  , shift
+  , getRPM
+  , setRPM
+  , eval
+  , run
+  ) where
 
 import Core
 import Control.Applicative
 import Control.Monad.RWS
 import Text.Printf
 
+getTime :: Action Double
+getTime = Wrap $ GetTime Return
+
+gears :: Action (Int, Int)
+gears = Wrap $ Gears Return
+
+
 go :: Double -> Action (Double, Double)
 go dist = Wrap $ Go dist Return
 
-shift :: Ring -> Direction -> Action Int
+shift :: Ring -> Direction -> Action ()
 shift r d = Wrap $ Shift r d Return
 
-cadence :: Double -> Action Double
-cadence x = Wrap $ Cadence x Return
+getRPM :: Action Double
+getRPM = Wrap $ GetRPM Return
+
+setRPM :: Double -> Action Double
+setRPM x = Wrap $ SetRPM x Return
   
 data Free f a
   = Return a 
@@ -34,18 +58,31 @@ instance Functor f => Functor (Free f) where
   fmap = liftM
 
 data ActionF r
-  = Go Double ((Double, Double) -> r)
-  | Shift Ring Direction (Int -> r)
-  | Cadence Double (Double -> r)
+  = GetTime (Double -> r)
+  | Gears ((Int, Int) -> r)
+  | Go Double ((Double, Double) -> r)
+  | Shift Ring Direction (() -> r)
+  | GetRPM (Double -> r)
+  | SetRPM Double (Double -> r)
 
 instance Functor ActionF where
+  fmap f (GetTime g)   = GetTime (f . g)
+  fmap f (Gears g)     = Gears (f . g)
   fmap f (Go x g)      = Go x (f . g)
   fmap f (Shift r d g) = Shift r d (f . g)
-  fmap f (Cadence x g) = Cadence x (f . g)
+  fmap f (GetRPM g)    = GetRPM (f . g)
+  fmap f (SetRPM x g) = SetRPM x (f . g)
 
 type Action = Free ActionF
 
 run :: Action a -> Ride a
+run (Wrap (GetTime f)) = do
+  tm <- gets time
+  run (f tm)
+run (Wrap (Gears f)) = do
+  bg <- gets bgGear
+  sm <- gets smGear
+  run (f (bg, sm))
 run (Wrap (Go dist f)) = 
   case f (0,0) of
     (Wrap (Go dist' g)) -> run (Wrap (Go (dist + dist') g))
@@ -63,36 +100,17 @@ run (Wrap (Go dist f)) =
       modify (\s -> s {distance = distance s + dist})
       run (f (sp, tm))
 run (Wrap (Shift r d f)) = do
-  n <- case (r, d) of
-        (Big, Up)     -> bgRingUp
-        (Big, Down)   -> bgRingDn
-        (Small, Up)   -> smRingUp
-        (Small, Down) -> smRingDn
-  run (f n)
-run (Wrap (Cadence x f)) = do
+  case (r, d) of
+    (Big, Up)     -> bgRingUp
+    (Big, Down)   -> bgRingDn
+    (Small, Up)   -> smRingUp
+    (Small, Down) -> smRingDn
+  run (f ())
+run (Wrap (GetRPM f)) = do
+  c <- gets rpm
+  run (f c)
+run (Wrap (SetRPM x f)) = do
   tell ["Pedal: Change cadence to " ++ printf "%.2f" x]
   modify (\s -> s {rpm = x})
   run (f x)
 run (Return x) = return x
-
-bikeTrip :: Double -> Action () 
-bikeTrip mph =  do
-  go 1.5
-  shift Big Up
-  shift Big Up
-  shift Small Down
-  shift Small Down
-  cadence 100
-  (s, _) <- go 20
-  shift Small (if (s * 3600) > mph then Up else Down)
-  go 10
-  go 3
-  shift Big Down
-  shift Small Up
-  go 5 
-  return ()
- 
-main :: IO ()
-main = do
-  let (s, w) = execRWS (run $ bikeTrip 20) bike startTrip 
-  display s w

@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-
 module Bicycle3
 
   ( Ring (..)
@@ -99,12 +97,12 @@ run (Go dist f) =
       modify (\s -> s {distance = distance s + dist})
       run (f (sp, tm))
 run (Shift r d f) = do
-  n <- case (r, d) of
-        (Big, Up)     -> bgRingUp
-        (Big, Down)   -> bgRingDn
-        (Small, Up)   -> smRingUp
-        (Small, Down) -> smRingDn
-  run (f n)
+  case (r, d) of
+    (Big, Up)     -> bgRingUp
+    (Big, Down)   -> bgRingDn
+    (Small, Up)   -> smRingUp
+    (Small, Down) -> smRingDn
+  run (f ())
 run (GetRPM f) = do
   c <- gets rpm
   run (f c)
