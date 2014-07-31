@@ -39,11 +39,12 @@ setRPM x = SetRPM x Return
 getRPM :: Action Double
 getRPM = GetRPM Return
   
+-- In GADT notation:
 -- data Action :: * -> * where
-  -- Go       :: Double -> ((Double, Double) -> Action a) -> Action a
-  -- Shift    :: Ring -> Direction -> (Int -> Action a) -> Action a
-  -- Cadence  :: Double -> (Double -> Action a) -> Action a
-  -- Return   :: a -> Action a
+--   Go       :: Double -> ((Double, Double) -> Action a) -> Action a
+--   Shift    :: Ring -> Direction -> (Int -> Action a) -> Action a
+--   Cadence  :: Double -> (Double -> Action a) -> Action a
+--   Return   :: a -> Action a
 
 data Action a
   = GetTime (Double -> Action a)

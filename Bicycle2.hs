@@ -57,7 +57,7 @@ instance Monad Action where
   (>>=)  = Bind
 
 instance Applicative Action where
-  pure = return
+  pure = Return
   (<*>) = ap
 
 instance Functor Action where

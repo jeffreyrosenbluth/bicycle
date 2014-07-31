@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+
 module Bicycle4
 
   ( Ring (..)
@@ -27,7 +29,6 @@ getTime = Wrap $ GetTime Return
 gears :: Action (Int, Int)
 gears = Wrap $ Gears Return
 
-
 go :: Double -> Action (Double, Double)
 go dist = Wrap $ Go dist Return
 
@@ -44,18 +45,19 @@ data Free f a
   = Return a 
   | Wrap (f (Free f a))
 
-instance Functor f => Monad (Free f) where
-  return = Return
-
-  Return x >>= f = f x
-  Wrap m   >>= f = Wrap $ fmap (>>= f) m
+instance Functor f => Functor (Free f) where
+  fmap f (Return a) = Return (f a)
+  fmap f (Wrap a)   = Wrap $ fmap (fmap f) a
 
 instance Functor f => Applicative (Free f) where
-  pure = return
-  (<*>) = ap
+  pure = Return
+  Return f <*> xs = fmap f xs
+  Wrap a   <*> xs = Wrap $ fmap (<*> xs) a
 
-instance Functor f => Functor (Free f) where
-  fmap = liftM
+instance Functor f => Monad (Free f) where
+  return = Return
+  Return x >>= f = f x
+  Wrap m   >>= f = Wrap $ fmap (>>= f) m
 
 data ActionF r
   = GetTime (Double -> r)
@@ -64,14 +66,12 @@ data ActionF r
   | Shift Ring Direction (() -> r)
   | GetRPM (Double -> r)
   | SetRPM Double (Double -> r)
+    deriving Functor
 
-instance Functor ActionF where
-  fmap f (GetTime g)   = GetTime (f . g)
-  fmap f (Gears g)     = Gears (f . g)
-  fmap f (Go x g)      = Go x (f . g)
-  fmap f (Shift r d g) = Shift r d (f . g)
-  fmap f (GetRPM g)    = GetRPM (f . g)
-  fmap f (SetRPM x g) = SetRPM x (f . g)
+-- instance Functor ActionF where
+--   fmap f (GetTime g)   = GetTime (f . g)
+--   fmap f (Gears g)     = Gears (f . g)
+-- etc...
 
 type Action = Free ActionF
 
