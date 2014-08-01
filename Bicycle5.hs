@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveFunctor #-}
 
-module Bicycle4
+module Bicycle5
 
   ( Ring (..)
   , Direction (..)
@@ -19,46 +19,29 @@ module Bicycle4
   ) where
 
 import Core
-import Control.Applicative
+import Control.Monad.Free        (Free (..), liftF)
+import Control.Monad.Free.Church (F, fromF)
 import Control.Monad.RWS
 import Text.Printf
 
 getTime :: Action Double
-getTime = Wrap $ GetTime Return
+getTime = liftF $ GetTime id
 
 gears :: Action (Int, Int)
-gears = Wrap $ Gears Return
+gears = liftF $ Gears id
 
 go :: Double -> Action (Double, Double)
-go dist = Wrap $ Go dist Return
+go dist = liftF $ Go dist id
 
 shift :: Ring -> Direction -> Action ()
-shift r d = Wrap $ Shift r d (Return ())
+shift r d = liftF $ Shift r d ()
 
 getRPM :: Action Double
-getRPM = Wrap $ GetRPM Return
+getRPM = liftF $ GetRPM id
 
 setRPM :: Double -> Action Double
-setRPM x = Wrap $ SetRPM x Return
+setRPM x = liftF $ SetRPM x id
   
-data Free f a
-  = Return a 
-  | Wrap (f (Free f a))
-
-instance Functor f => Functor (Free f) where
-  fmap f (Return a) = Return (f a)
-  fmap f (Wrap a)   = Wrap $ fmap (fmap f) a
-
-instance Functor f => Applicative (Free f) where
-  pure = Return
-  Return f <*> xs = fmap f xs
-  Wrap a   <*> xs = Wrap $ fmap (<*> xs) a
-
-instance Functor f => Monad (Free f) where
-  return = Return
-  Return x >>= f = f x
-  Wrap m   >>= f = Wrap $ fmap (>>= f) m
-
 data ActionF r
   = GetTime (Double -> r)
   | Gears ((Int, Int) -> r)
@@ -68,26 +51,22 @@ data ActionF r
   | SetRPM Double (Double -> r)
     deriving Functor
 
--- instance Functor ActionF where
---   fmap f (GetTime g)   = GetTime (f . g)
---   fmap f (Gears g)     = Gears (f . g)
---   ...
---   fmap f (Shift r d x) = Shift (f x)
--- etc...
-
-type Action = Free ActionF
+type Action = F ActionF
 
 run :: Action a -> Ride a
-run (Wrap (GetTime f)) = do
+run = runF . fromF
+
+runF :: Free ActionF a -> Ride a
+runF (Free (GetTime f)) = do
   tm <- gets time
-  run (f tm)
-run (Wrap (Gears f)) = do
+  runF (f tm)
+runF (Free (Gears f)) = do
   bg <- gets bgGear
   sm <- gets smGear
-  run (f (bg, sm))
-run (Wrap (Go dist f)) = 
+  runF (f (bg, sm))
+runF (Free (Go dist f)) = 
   case f (0,0) of
-    (Wrap (Go dist' g)) -> run (Wrap (Go (dist + dist') g))
+    (Free (Go dist' g)) -> runF (Free (Go (dist + dist') g))
     _          -> do
       bg <- gets bgGear
       sm <- gets smGear
@@ -100,19 +79,19 @@ run (Wrap (Go dist f)) =
                       ++ printf "%.2f" tm ++ " minutes."]
       modify (\s -> s {time = time s + tm})
       modify (\s -> s {distance = distance s + dist})
-      run (f (sp, tm))
-run (Wrap (Shift r d x)) = do
+      runF (f (sp, tm))
+runF (Free (Shift r d x)) = do
   case (r, d) of
     (Big, Up)     -> bgRingUp
     (Big, Down)   -> bgRingDn
     (Small, Up)   -> smRingUp
     (Small, Down) -> smRingDn
-  run x
-run (Wrap (GetRPM f)) = do
+  runF x
+runF (Free (GetRPM f)) = do
   c <- gets rpm
-  run (f c)
-run (Wrap (SetRPM x f)) = do
+  runF (f c)
+runF (Free (SetRPM x f)) = do
   tell ["Pedal: Change cadence to " ++ printf "%.2f" x]
   modify (\s -> s {rpm = x})
-  run (f x)
-run (Return x) = return x
+  runF (f x)
+runF (Pure x) = return x
