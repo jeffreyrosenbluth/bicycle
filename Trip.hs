@@ -2,7 +2,7 @@
 
 module Main where
 
-import Bicycle5
+import Bicycle6
 import Text.Printf
 import Control.Monad (unless)
 
