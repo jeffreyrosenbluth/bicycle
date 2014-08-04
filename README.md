@@ -1,8 +1,8 @@
 bicycle
 =======
 
-Shallow, Deep and Free
-----------------------
+Shallow, Deep, Free & Operational
+---------------------------------
 
 A toy embedded DSL using a bicycle ride as a demonstartion domain.
 
@@ -11,3 +11,5 @@ A toy embedded DSL using a bicycle ride as a demonstartion domain.
 - bicycle2: A deep embedding (may violate monad laws)
 - bicycle3: A deep embedding (satisfies monad laws)
 - bicycle4: A deep embedding using a free monad.
+- bicycle5: A deep embedding using the free library
+- bicycle6: A deep embedding using the operational monad
