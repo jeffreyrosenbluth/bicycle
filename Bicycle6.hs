@@ -52,6 +52,10 @@ data ActionF r where
 
 type Action = Program ActionF
 
+fromView :: (Monad m) => ProgramViewT instr m a -> ProgramT instr m a
+fromView (Return a)     = return a
+fromView (instr :>>= k) = singleton instr >>= k
+
 run :: Action a -> Ride a
 run m = case view m of
   Return x -> return x
@@ -63,18 +67,22 @@ run m = case view m of
     sm <- gets smGear
     run (k (bg, sm))
   Go dist :>>= k -> do
-    bg <- gets bgGear
-    sm <- gets smGear
-    r  <- gets rpm
-    b  <- ask
-    let sp = speed bg sm (wheelDiam b) r
-        tm = dist / sp / 60
-    tell ["Going: " ++ printf "%.2f" dist ++ " miles at " 
-                    ++ printf "%.2f" (sp * 3600) ++ " mph in " 
-                    ++ printf "%.2f" tm ++ " minutes."]
-    modify (\s -> s {time = time s + tm})
-    modify (\s -> s {distance = distance s + dist})
-    run (k (sp, tm))
+    case view $ k (0,0) of
+      Go dist' :>>= k' -> do
+        run (go (dist + dist') >>= k')
+      _                -> do
+        bg <- gets bgGear
+        sm <- gets smGear
+        r  <- gets rpm
+        b  <- ask
+        let sp = speed bg sm (wheelDiam b) r
+            tm = dist / sp / 60
+        tell ["Going: " ++ printf "%.2f" dist ++ " miles at " 
+                        ++ printf "%.2f" (sp * 3600) ++ " mph in " 
+                        ++ printf "%.2f" tm ++ " minutes."]
+        modify (\s -> s {time = time s + tm})
+        modify (\s -> s {distance = distance s + dist})
+        run (k (sp, tm))
   Shift r d :>>= k -> do
     case (r, d) of
       (Big, Up)     -> bgRingUp
