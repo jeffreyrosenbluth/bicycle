@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE GADTs         #-}
 
 module Bicycle6
@@ -20,7 +19,7 @@ module Bicycle6
   ) where
 
 import Core
-import Control.Monad.Operational
+import Operational
 import Control.Monad.RWS
 import Text.Printf
 
