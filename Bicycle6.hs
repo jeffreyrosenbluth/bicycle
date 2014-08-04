@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE GADTs         #-}
 
 module Bicycle6
@@ -62,9 +61,9 @@ run m = case view m of
     bg <- gets bgGear
     sm <- gets smGear
     run (k (bg, sm))
-  Go dist :>>= k -> do
+  Go dist :>>= k -> 
     case view $ k (0,0) of
-      Go dist' :>>= k' -> do
+      Go dist' :>>= k' ->
         run (go (dist + dist') >>= k')
       _                -> do
         bg <- gets bgGear
