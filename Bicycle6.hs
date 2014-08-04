@@ -52,10 +52,6 @@ data ActionF r where
 
 type Action = Program ActionF
 
-fromView :: (Monad m) => ProgramViewT instr m a -> ProgramT instr m a
-fromView (Return a)     = return a
-fromView (instr :>>= k) = singleton instr >>= k
-
 run :: Action a -> Ride a
 run m = case view m of
   Return x -> return x
