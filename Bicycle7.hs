@@ -1,4 +1,5 @@
-{-# LANGUAGE GADTs         #-}
+{-# LANGUAGE GADTs          #-}
+{-# LANGUAGE KindSignatures #-}
 
 module Bicycle7
 
@@ -41,20 +42,21 @@ getRPM = singleton  GetRPM
 setRPM :: Double -> Action Double
 setRPM = singleton . SetRPM 
   
-data ActionF r where
-  GetTime :: ActionF Double
-  Gears :: ActionF (Int, Int)
-  Go :: Double -> ActionF (Double, Double)
-  Shift :: Ring -> Direction -> ActionF ()
-  GetRPM :: ActionF Double
-  SetRPM :: Double -> ActionF Double
+data ActionO :: * -> * where
+  GetTime :: ActionO Double
+  Gears :: ActionO (Int, Int)
+  Go :: Double -> ActionO (Double, Double)
+  Shift :: Ring -> Direction -> ActionO ()
+  GetRPM :: ActionO Double
+  SetRPM :: Double -> ActionO Double
 
-type Action = Program ActionF
+type Action = Program ActionO
 
-data Program instr a where
-  Return  :: a -> Program instr a
-  Bind  :: Program instr b -> (b -> Program instr a) -> Program instr a
-  Instr :: instr a -> Program instr a
+-- data Program instr a where --
+data Program :: (* -> *) -> * -> * where
+  Return :: a -> Program instr a
+  Bind   :: Program instr a -> (a -> Program instr b) -> Program instr b
+  Instr  :: instr a -> Program instr a
 
 instance Monad (Program instr) where
   return = Return
