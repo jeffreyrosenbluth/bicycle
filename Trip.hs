@@ -2,7 +2,7 @@
 
 module Main where
 
-import Bicycle1
+import Bicycle7
 import Text.Printf
 import Control.Monad (unless)
 
@@ -55,7 +55,7 @@ bikeRide mph =  do
 
 main :: IO ()
 main = do
-  let (s, w) = eval (bikeRide 20) bike (Trip 90 36 21 0 0)
+  let (s, w) = eval (run $ bikeRide 20) bike (Trip 90 36 21 0 0)
   putStrLn ""
   putStrLn "---------------- Bike Trip --------------------\n"
   mapM_ putStrLn w

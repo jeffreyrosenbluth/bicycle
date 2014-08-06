@@ -1,5 +1,4 @@
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
 
 module Operational
   ( Program
@@ -40,5 +39,3 @@ view ((Lift m)     `Bind` g) = view $ g m
 view ((m `Bind` g) `Bind` h) = view (m `Bind` (\x -> g x `Bind` h))
 view ((Instr i)    `Bind` g) = i :>>= g
 view (Instr i)               = i :>>= return
-
-

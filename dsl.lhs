@@ -28,19 +28,19 @@ and deep. In a shallow embedding, operations in the DSL are
 just haskell functions operating on haskell values. In a deep embedding an
 abstract syntax tree is created and then evaluated. Of course in the real world
 we have the complete spectrum from shallow to deep and most DSLs, although closer
-to on end thanthe other, are not strictly
+to on end than the other, are not strictly
 shallow or deep.  Rather than go into detail
-about the differences between shallow and deep embeddings here we will introduce
+about the differences between shallow and deep embeddings here, we will introduce
 our toy DSL and illustrate the differences using it as an example.
 
 In this post we will cover the
 example domain, a bicycle ride, and create a shallow EDSL for it. Future
 posts will cover deep embeddings.
 
-The bicycle ride language
--------------------------
+The bicycle ride language BRL
+-----------------------------
 
-Our language will model the things that a cyclist can do during a ride: go
+Our language will model the things that a road cyclist can do during a ride: go
 a specified distance at the current gear and cadence (rpm), shift gears, and
 change cadence. The DSL will keep a running log of all of the cyclist\'s 
 actions as well as the elapsed time and average speed of the ride.
@@ -113,6 +113,8 @@ The function returns an object of type `Ride ()` which we can evaluate with
 Our DSL uses do notation to mimick an imperative language. In this case
 the bind function from the RWS monad is used to sequece the actions.
 
+DSL Functions
+-------------
 Before moving on to the DSL proper we need a few utility functions
 that will be used by all of the DSL versions that we write. 
 These functions are in 
@@ -132,7 +134,7 @@ new gear. If we are already at the top gear, just return it. Since this is
 an interanl function that will not be exposed by our DSL, we can guarantee
 that the error branch is never executed.
 
-`prevGear is defined analgously to `nextGear` refer to the source file for 
+`prevGear` is defined analgously to `nextGear`, refer to the source file for 
 the implementation.
 
 ~~~~ { .haskell }
@@ -148,10 +150,12 @@ speed bg sm diam r =
   fromIntegral bg / fromIntegral sm * diam * r * pi / (60 * 12 * 5280)
 ~~~~
 
+The Shallow EDSL
+----------------
 The following four functions are used for shifting gears and are all defined in a
 manner similar to `bgRingUp`. This function
 demonstrates how the components of the RWS monad are utilized. We get the
-current gear of the big ring with `gets`, the bicycle with `ask` and we
+current gear of the big ring with `gets`, the `Bicycle` with `ask` and we
 log the action with `tell`. Finally, we modify the state with `modify`.
 
 ~~~~ { .haskell }
@@ -228,6 +232,8 @@ setRPM x = do
   modify (\s -> s {rpm = x})
 ~~~~
 
+Programming in BRL
+------------------
 We are finally ready to write a program in the bicycle ride DSL.
 First we setup our bike.
 
@@ -269,7 +275,7 @@ Our examaple program takes a argument mph, if after the 20 mile segment of
 the ride, the speed exceeds this agrument then the back derailleur is shfited
 down. 
 
-~~~~ {.haskel }
+~~~~ {.haskell }
 bikeRide mph =  do
   go 1.5
   shift Small Down
@@ -343,3 +349,10 @@ Upon building and running the programs Trip we see the following output
     Time     : 139.22 minutes
     Avg Speed: 18.10 mph
     -----------------------------------------------
+
+Summary
+------
+We have done nothing fancy to create our toy EDSL, no GHC
+extensions or libraries, just straight up haskell and the RWS monad. In part
+2 we will show how GADTs will help us to embed our DSL more deeply. And explore
+some of the advantages of a deep embedding.
