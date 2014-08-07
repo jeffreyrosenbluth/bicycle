@@ -7,10 +7,9 @@ This is the first in a series of posts discussing embedded domain
 specific languages in haskell. The plan is to create a toy DSL and use
 it as a running example as we explore shallow and deep embeddings. Along
 the way we will meet both the *operational monad* and the *free monad*.
-This series is meant to introduce and compare some of the options available
-when creating a DSL. EDSLs are an active research topic in computer science,
-for a glimpse at some of the deeper issues, there is no better place to start
-than Andy Gill\'s [Looking at embedded DSLs](http://delivery.acm.org/10.1145/2620000/2617811/p30-gill.pdf?ip=96.232.159.39&id=2617811&acc=OPEN&key=4D4702B0C3E38B35%2E4D4702B0C3E38B35%2E4D4702B0C3E38B35%2E6D218144511F3437&CFID=524826409&CFTOKEN=31598781&__acm__=1407278022_fe7200df77e4fc00dbd16efb62650ad3).
+EDSLs are an active research topic in computer science,
+for a glimpse at some of the deeper issues, a good place to start
+is Andy Gill\'s [Looking at embedded DSLs](http://delivery.acm.org/10.1145/2620000/2617811/p30-gill.pdf?ip=96.232.159.39&id=2617811&acc=OPEN&key=4D4702B0C3E38B35%2E4D4702B0C3E38B35%2E4D4702B0C3E38B35%2E6D218144511F3437&CFID=524826409&CFTOKEN=31598781&__acm__=1407278022_fe7200df77e4fc00dbd16efb62650ad3).
 
 A domain specific lanuage (DSL) is a
 language designed for a specific problem domain. Examples include HTML,
@@ -19,14 +18,14 @@ flavors of DSLs, the first is a stand alone language with its own interpreter
 or compiler. The second is embedded in a host language like haskell. Of the
 examples mentioned above, HTML, *postscript*, and SQL are stand alone DSLs, while
 *diagrams*, *blank-canvas*, and QuickCheck are embedded. A good introduction to EDSLs
-in haskell is Adres Loh\'s talk,
+in haskell is Andres Loh\'s talk,
 [Haskell for Embedded Domain Specific Languages](https://skillsmatter.com/skillscasts/2872-haskell-for-embedded-domain-specific-languages).
 
-This series is
-concerned with EDSLs and the two primary ways to embed them in haskell: shallow
+There are two basic ways to embed a DSL in haskell: shallow
 and deep. In a shallow embedding, operations in the DSL are 
 just haskell functions operating on haskell values. In a deep embedding an
-abstract syntax tree is created and then evaluated. Of course in the real world
+abstract syntax tree is first created and then evaluated, analyzed, optimizedc etc. 
+Of course in the real world
 we have the complete spectrum from shallow to deep and most DSLs, although closer
 to on end than the other, are not strictly
 shallow or deep.  Rather than go into detail
