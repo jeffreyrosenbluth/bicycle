@@ -2,7 +2,7 @@
 
 module Main where
 
-import Bicycle7
+import Bicycle2
 import Text.Printf
 import Control.Monad (unless)
 
@@ -31,15 +31,13 @@ topSmall = do
  unless (sm == sm') topSmall
 
 bikeRide mph =  do
-  go 1.5
-  shift Small Down
+  go 2.5
   shift Small Down
   setRPM 100
   (s, _) <- go 20
   shift Small (if (s * 3600) > mph then Up else Down)
-  go 10
-  go 3
-  shift Small Up
+  go 7.5
+  go 7.5
   topBig
   topSmall
   go 5
@@ -48,14 +46,14 @@ bikeRide mph =  do
     then do
       shift Big Down
       shift Small Up
-      shift Small Up
     else return ()
   go 2.5
   return ()
 
 main :: IO ()
 main = do
-  let (s, w) = eval (run $ bikeRide 20) bike (Trip 90 36 21 0 0)
+  -- uncomment nex line for Bicycle2-7
+  let (s, w) = eval (run $ bikeRide 20) bike (Trip 90 36 19 0 0)
   putStrLn ""
   putStrLn "---------------- Bike Trip --------------------\n"
   mapM_ putStrLn w

@@ -103,7 +103,9 @@ run ((Instr (Go dist)) `Bind` k) = do
       run (k (sp, tm))
 run ((Instr (Shift r d)) `Bind` k) = do
   case (r, d) of
-    (Big, Up)     -> bgRingUp
+    (Big, Up)     -> do 
+      tell ["Shift: Large ring up."] 
+      bgRingUp
     (Big, Down)   -> bgRingDn
     (Small, Up)   -> smRingUp
     (Small, Down) -> smRingDn
