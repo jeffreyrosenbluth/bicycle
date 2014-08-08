@@ -156,6 +156,7 @@ The interpreter needs to do all of the work that our original functions did
 in our shallow embedding, plus handle `Return` and `Bind`. 
 We pretty much just copy and paste the bodies of
 these functions into the interpreter like so.
+[Bicycle2](https://github.com/jeffreyrosenbluth/bicycle/blob/master/Bicycle2.hs)
 
 ~~~~ { .haskell }
 run :: Action a -> Ride a
