@@ -58,7 +58,9 @@ data Program :: (* -> *) -> * -> * where
 
 instance Monad (Program instr) where
   return = Return
+  -- left identity
   Return a >>= k = k a
+  -- associativity
   (Bind ia f) >>= k = Bind ia (\a -> f a >>= k)
 
 instance Functor (Program instr) where
@@ -68,6 +70,7 @@ instance Applicative (Program instr) where
   pure  = return
   (<*>) = ap
 
+-- right identity
 liftAct :: t a -> Program t a
 liftAct ta = Bind ta Return
 
